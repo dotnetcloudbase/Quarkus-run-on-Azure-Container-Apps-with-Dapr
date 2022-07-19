@@ -44,9 +44,10 @@ Quarkus は、Jakarta EE や MicroProfile で培った技術が利用可能な�
 7. Log Analytics を作成
 8. Azure Container App Environment の作成
 9. Azure Container App のインスタンスを作成
-10. ログの確認（クエリの実行）
+10. ログの確認
 11.  アプリケーションの更新
 12.  リビジョン管理
+13.  コンソール・ログイン
 
 ## Azure Container Apps にデプロイするまで
 
@@ -284,7 +285,7 @@ az acr repository show -n $YOUR_AZURE_CONTAINER_REGISTRY --image tyoshio2002/hel
 
 ```bash
 export RESOURCE_GROUP="ms-love-java"
-export LOCATION="eastus"
+export LOCATION="japaneast"
 export LOG_ANALYTICS_WORKSPACE="jjug-containerapps-logs"
 export CONTAINERAPPS_ENVIRONMENT="jjug-env"
 export APPLICATION_NAME="hello-service"
@@ -294,7 +295,7 @@ export APPLICATION_NAME="hello-service"
 
 > 注意：  
 > 上記の各種サービス名は適宜修正をしてください。
-> 2022/3/25 現在 Azure Container Apps をインストールできるロケーションは `North Central US (Stage)`,`Canada Central`,`West Europe`,`North Europe`,`East US`,`East US 2` です
+> 2022/5 現在 Azure Container Apps をインストールできるロケーションは `North Central US, Canada Central, West Europe, North Europe, East US, East US 2, East Asia, Australia East, Germany West Central, Japan East, UK South, West US` です
 
 ### 6. リソース・グループを作成
 
@@ -375,7 +376,35 @@ Hello RESTEasy
 
 ### 10. ログの確認（クエリの実行）
 
-Azure Container Apps 上でアプリケーションが動作しているので、アプリケーションのログを確認します。`az monitor log-analytics query` コマンドを実行してログを確認してみましょう。
+Azure Container Apps 上でアプリケーションが動作しているので、アプリケーションのログを確認します。
+
+#### 10.1 Azure CLI コマンドによるログ・ストリームの確認
+
+`az containerapp logs show` コマンドを実行してログ・ストリームを確認してみましょう。
+
+```azurecli
+ az containerapp logs show --name $APPLICATION_NAME --resource-group $RESOURCE_GROUP   --tail 100
+```
+
+コマンドを実行すると下記の結果が表示されまs。
+
+```text
+Command group 'containerapp logs' is in preview and under development. Reference and support levels: https://aka.ms/CLI_refstatus
+{"TimeStamp":"2022-05-23T04:31:14.10523","Log":"Connecting to the container 'hello-service'..."}
+{"TimeStamp":"2022-05-23T04:31:14.12406","Log":"Successfully Connected to container: 'hello-service' [Revision: 'hello-service--hl8xrh6', Replica: 'hello-service--hl8xrh6-77b5f965d-ssh9l']"}
+{"TimeStamp":"2022-05-23T04:29:05.3103867+00:00","Log":"____  __  _____   ___  __ ____  ______"}
+{"TimeStamp":"2022-05-23T04:29:05.3104058+00:00","Log":"--/ __ \\/ / / / _ | / _ \\/ //_/ / / / __/"}
+{"TimeStamp":"2022-05-23T04:29:05.3104091+00:00","Log":"-/ /_/ / /_/ / __ |/ , _/ ,\u003C / /_/ /\\ \\"}
+{"TimeStamp":"2022-05-23T04:29:05.3104115+00:00","Log":"|_/_/|_/_/|_|\\____/___/"}
+{"TimeStamp":"2022-05-23T04:29:05.3104137+00:00","Log":"13:29:05,310 INFO  [io.quarkus] (main) hello-world 1.0.0-SNAPSHOT native (powered by Quarkus 2.8.2.Final) started in 0.011s. Listening on: http://0.0.0.0:8080"}
+{"TimeStamp":"2022-05-23T04:29:05.3104165+00:00","Log":"13:29:05,310 INFO  [io.quarkus] (main) Profile prod activated."}
+{"TimeStamp":"2022-05-23T04:29:05.3104324+00:00","Log":"13:29:05,310 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson, smallrye-context-propagation, vertx]"}
+
+```
+
+#### 10.2 Log Analytics に格納されているログを確認
+
+`az monitor log-analytics query` コマンドを実行してログを確認してみましょう。
 
 ```azurecli
 az monitor log-analytics query \
@@ -637,6 +666,29 @@ CreatedTime                Active    TrafficWeight    Name
 > 注意：  
 > 新しくデプロイしたのは traffic rate 0 でデプロイしてほしかったのですが、仕様との事です。
 > Issue: [Request to have a functionality of the update with traffic weight=0](https://github.com/microsoft/azure-container-apps/issues/23)
+
+
+### 1３. コンソール・ログイン
+
+Azure CLI を利用してコンテナのコンソールに接続できるようになっています
+`az containerapp exec` コマンドを実行してください。
+
+```azurecli
+az containerapp exec --name $APPLICATION_NAME --resource-group $RESOURCE_GROUP   
+```
+
+実行すると下記のような結果が表示されます。
+
+```bash
+Command group 'containerapp' is in preview and under development. Reference and support levels: https://aka.ms/CLI_refstatus
+INFO: Connecting to the container 'hello-service'...
+Use ctrl + D to exit.
+INFO: Successfully connected to container: 'hello-service'. [ Revision: 'hello-service--hl8xrh6', Replica: 'hello-service--hl8xrh6-77b5f965d-ssh9l']
+sh-4.4$ uname -a
+Linux hello-service--hl8xrh6-77b5f965d-ssh9l 5.4.0-1078-azure #81~18.04.1-Ubuntu SMP Mon Apr 25 23:16:13 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+sh-4.4$ ls
+application
+```
 
 ## まとめ
 
